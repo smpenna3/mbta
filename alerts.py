@@ -22,7 +22,7 @@ logger.addHandler(stream)
 # URL and headers (API-key)
 url = 'https://api-v3.mbta.com'
 headers = {'api_key':'k9rojBi20kesV8k_yW1WOA'}
-call = '/alerts/'
+call = '/alerts?filter[route_type]=0,1'
 
 try:
     # Get the current data and parse in JSON format
@@ -63,22 +63,30 @@ for alert in relevant_data:
         try:
             # Get the start and end time in datetime format
             startTMP = time['start']
-            stopTMP = time['end']
             start = dt.datetime.strptime(startTMP[0:-6], '%Y-%m-%dT%H:%M:%S')
-            stop = dt.datetime.strptime(stopTMP[0:-6], '%Y-%m-%dT%H:%M:%S')
+            endTMP = time['end']
             
-            # Check that time falls within current period
-            if((stop-now).days >= 0 and (start-now).days <= 0):
-                flagData = True
+            if((start-now).days <= 0 and endTMP is None):
+                flagData = True        
+            else:
+                end = dt.datetime.strptime(endTMP[0:-6], '%Y-%m-%dT%H:%M:%S')
+                
+                # Check that time falls within current period
+                if((end-now).days >= 0 and (start-now).days <= 0):
+                    flagData = True
+
             
         except:
+            logger.error(traceback.print_exec())
             pass
         
     if(flagData):
         final_data.append(alert)
     
-logger.info('Found ' + str(len(final_data)) + ' current relevant alerts.')
-
-
+logger.info('\nFound ' + str(len(final_data)) + ' current relevant alerts.\n')
 
 # Now we have the relevant and current alerts stored in final_data
+for alert in final_data:
+    logger.info('\n-------------------------------------')
+    logger.info(alert['attributes']['effect'])
+    logger.info(alert['attributes']['short_header'])
